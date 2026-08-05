@@ -1,6 +1,6 @@
 ---
-name: TripleSixCore
-description: Bộ quy tắc lập trình, chuẩn thiết kế Domain Entities, Services, Unit Tests và quy chuẩn code cho các dự án sử dụng TripleSixCore.
+name: TripleSix.Core
+description: Bộ quy tắc lập trình, chuẩn thiết kế Domain Entities, Services, Unit Tests và quy chuẩn code cho các dự án sử dụng TripleSix.Core.
 ---
 
 # TripleSixCore Coding Rules & Standards
@@ -90,7 +90,6 @@ Bên trong một class Entity, code cần được sắp xếp và phân vùng t
     }
     ```
 - **Định dạng XML Documentation**: Tất cả XML summary/docstring comment cho class, property, method phải **luôn kết thúc bằng dấu chấm `.`**.
-
 
 ## 12. Cấu trúc lớp Service (Service Class Structure)
 
@@ -249,6 +248,7 @@ Bên trong một class Entity, code cần được sắp xếp và phân vùng t
   - Phải thay thế bằng thuộc tính Data DTO của thực thể liên kết tương ứng (ví dụ: `public SiteDataAdminDto? Site { get; set; }`, `public CustomerDataAdminDto? Customer { get; set; }`, `public WorkflowDataAdminDto? Workflow { get; set; }`).
 - **Tùy biến Mapped Fields trong Data DTO qua `FromEntity`**:
   - Khi Data DTO cần tùy biến map các trường dữ liệu qua tập hợp/thực thể liên kết (ví dụ: trích xuất danh sách `List<TicketDataAdminDto>` từ tập hợp `StaffLocationTickets`), thực hiện override phương thức `FromEntity(IServiceProvider serviceProvider, TEntity source)` trực tiếp trong Data DTO:
+
     ```csharp
     public override async Task FromEntity(IServiceProvider serviceProvider, StaffLocationLog source)
     {
@@ -258,8 +258,10 @@ Bên trong một class Entity, code cần được sắp xếp và phân vùng t
         Tickets = mapper.MapData<List<TicketDataAdminDto>>(source.StaffLocationTickets.Select(x => x.Ticket));
     }
     ```
+
 - **Tùy biến Mapped Fields trong Input DTO qua `ToEntity`**:
   - Khi Input DTO (`BaseInputDto<TEntity>`, `BaseCreateAdminDto<TEntity>`, `BaseUpdateAdminDto<TEntity>`) cần tùy biến chuyển đổi từ DTO thành Entity (ví dụ: mã hóa thông tin, xử lý bổ sung các thuộc tính trước khi lưu), thực hiện override phương thức `ToEntity(IServiceProvider serviceProvider, TEntity? entity = null)` trực tiếp trong Input DTO:
+
     ```csharp
     public override async Task<Customer> ToEntity(IServiceProvider serviceProvider, Customer? entity = null)
     {
@@ -269,6 +271,7 @@ Bên trong một class Entity, code cần được sắp xếp và phân vùng t
         return result;
     }
     ```
+
 - **Quy định Đặt tên trong `[SwaggerTag]` và `[DisplayName]`**:
   - Sử dụng tiếng Việt ngắn gọn làm mô tả cho Controller / DTO.
   - **Tuyệt đối không đính kèm tên tiếng Anh của Entity trong dấu ngoặc đơn** đằng sau (ví dụ: viết `[SwaggerTag("Quản lý sự vụ")]` thay vì `[SwaggerTag("Quản lý sự vụ (Case)")]`).
@@ -349,7 +352,7 @@ Bên trong một class Entity, code cần được sắp xếp và phân vùng t
 ## 31. Quy định sử dụng Db.Set<T>().Add(...) (Synchronous Add in EF Core)
 
 - Khi thêm một thực thể (entity) mới vào EF Core DbContext ChangeTracker, luôn ưu tiên sử dụng phương thức đồng bộ `Db.[Entity].Add(entity)` (hoặc `Db.Set<T>().Add(entity)`) thay vì `AddAsync(...)`.
-- *Lý do*: Phương thức `Add` trong EF Core chỉ đơn thuần gắn trạng thái `EntityState.Added` lên đối tượng trên RAM mà không thực hiện kết nối hay I/O call xuống Database. Việc thực thi câu lệnh SQL chỉ diễn ra khi gọi `await Db.SaveChangesAsync()`. Phương thức `AddAsync` chỉ thực sự cần thiết khi sử dụng các Value Generator đặc biệt có truy vấn DB ngay tại thời điểm Add (ví dụ `HiLoValueGenerator`).
+- _Lý do_: Phương thức `Add` trong EF Core chỉ đơn thuần gắn trạng thái `EntityState.Added` lên đối tượng trên RAM mà không thực hiện kết nối hay I/O call xuống Database. Việc thực thi câu lệnh SQL chỉ diễn ra khi gọi `await Db.SaveChangesAsync()`. Phương thức `AddAsync` chỉ thực sự cần thiết khi sử dụng các Value Generator đặc biệt có truy vấn DB ngay tại thời điểm Add (ví dụ `HiLoValueGenerator`).
 
 ## 32. Quy định Trả về đối với Phương thức Service Thao tác (Add/Delete Return Types)
 
@@ -394,11 +397,7 @@ Bên trong một class Entity, code cần được sắp xếp và phân vùng t
 - **Sử dụng Eager Loading (`.Include(...)`) thay cho Lazy Loading Proxies**:
   - Khi cần lấy dữ liệu thuộc tính của thực thể liên kết (Navigation Property) để map ra DTO hoặc trả về response, **BẮT BUỘC** phải sử dụng `.Include(...)` để EF Core phát sinh duy nhất 1 câu SQL `JOIN` tối ưu dưới CSDL.
   - Tuyệt đối không phụ thuộc vào `UseLazyLoadingProxies` khi truy vấn danh sách để tránh gây ra sự cố nghiêm trọng **N+1 Query Problem** (thực thi 1 + N câu SQL riêng biệt xuống DB).
-  - *Ngoại lệ*: Nếu thuộc tính liên kết chỉ dùng trong mệnh đề lọc `.Where(...)` hoặc chỉ lấy trường khóa ngoại ID (`SiteId`, `StateId`), không đính kèm `.Include(...)` dư thừa vì EF Core đã tự gộp JOIN dưới SQL.
+  - _Ngoại lệ_: Nếu thuộc tính liên kết chỉ dùng trong mệnh đề lọc `.Where(...)` hoặc chỉ lấy trường khóa ngoại ID (`SiteId`, `StateId`), không đính kèm `.Include(...)` dư thừa vì EF Core đã tự gộp JOIN dưới SQL.
 - **Sử dụng `AsNoTracking()` cho Truy vấn Đọc (Read-Only Queries)**:
   - Tất cả các câu truy vấn tra cứu danh sách, xuất báo cáo, đọc dữ liệu trả về cho API Read-Only mà không thực hiện sửa đổi và gọi `SaveChangesAsync()` **BẮT BUỘC** phải áp dụng `.AsNoTracking()` (hoặc sử dụng thuộc tính `Query` của `BaseService` đã được cấu hình tối ưu).
   - `.AsNoTracking()` giúp bỏ qua bộ nhớ Change Tracker trên RAM, giảm chi phí CPU/bộ nhớ và tăng tốc độ đọc dữ liệu từ 20% - 40%.
-
-
-
-
