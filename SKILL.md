@@ -24,12 +24,13 @@ Quy tắc thiết kế và cấu trúc mã nguồn đối với các thực th�
 
 - Mọi thuộc tính danh sách `ICollection<T>` phải được khởi tạo bằng cú pháp rút gọn C# 12 (`= [];`) thay vì `new List<T>()` hay `new HashSet<T>()`.
 
-## 4. Cấu hình Quan hệ giữa các Entity (Data Annotations)
+## 4. Cấu hình Quan hệ giữa các Entity (Data Annotations & Virtual Proxies)
 
 - Ưu tiên cấu hình quan hệ bằng Data Annotations đặt trực tiếp trên Navigation Properties:
   - Sử dụng `[ForeignKey(nameof(ForeignId))]` để chỉ định khóa ngoại.
   - Sử dụng `[DeleteBehavior(DeleteBehavior.Restrict)]` để ngăn chặn hành vi xóa cascade mặc định của EF Core.
-- Chỉ sử dụng Fluent API (`Configure` method) cho các trường hợp đặc biệt mà Data Annotations không hỗ trợ (ví dụ: `HasConversion` để cấu hình trường JSONB, hoặc cấu hình Index).
+- **Tất cả các Navigation Properties và Collections (`ICollection<T>`) trong Entity BẮT BUỘC phải được khai báo dạng `virtual`** để tương thích với cơ chế EF Core `UseLazyLoadingProxies` / `UseChangeTrackingProxies`.
+- Chỉ sử dụng Fluent API (`Configure` method) cho các trường hợp đặc biệt mà Data Annotations không hỗ trợ (như cấu hình Index hoặc cài đặt kiểu dữ liệu cột).
 
 ## 5. Cấu trúc và Phân đoạn thực thể (Entity Structure)
 
@@ -63,9 +64,11 @@ Bên trong một class Entity, code cần được sắp xếp và phân vùng t
   - _Ví dụ tốt_: `builder.HasIndex(x => x.Code).IsUnique();` hoặc `builder.HasIndex(x => x.Code);`
   - _Ví dụ không tốt_: tách `.IsUnique();` xuống dòng tiếp theo.
 
-## 9. Quy tắc Git Commit của Agent
+## 9. Quy tắc Git Commit & Push của Agent
 
-- Tuyệt đối không tự động thực hiện lệnh `git commit` trừ khi có yêu cầu hoặc sự đồng ý rõ ràng từ người dùng.
+- **Tuyệt đối không** tự động thực hiện các lệnh `git commit` / `git push` trên dự án mã nguồn (source code project) dưới bất kỳ hình thức nào trừ khi có yêu cầu trực tiếp từ người dùng.
+- Việc cập nhật nội dung các tệp tin trong Skill (ví dụ: `C:\Users\tripl\.gemini\config\skills\TripleSix.Core\`) được phép ghi nhận trực tiếp.
+
 
 ## 10. Sử dụng Primary Constructor
 
@@ -216,7 +219,7 @@ Bên trong một class Entity, code cần được sắp xếp và phân vùng t
   - Các tham số vị trí tọa độ (`Lat`, `Lng`) hoặc tham số dùng chung truyền qua HTTP Header không lặp lại trong Request Body mà được đóng gói thành các DTO chuyên biệt đặt tại thư mục `Src/Application/Dto/Apps/Headers/` (ví dụ: `LocationHeaderAppDto.cs`).
   - Phía Controller tiếp nhận các Header DTOs bằng thuộc tính `[FromHeader]` (ví dụ: `[FromHeader] LocationHeaderAppDto location`).
 - **Tổ chức File và Namespace DTO**:
-  - Các DTO của một phân hệ/thực thể được đặt trong thư mục con tương ứng (ví dụ: `Src/Application/Dto/Admins/[Entities]/[Entity]CreateAdminDto.cs`). Mỗi class DTO nằm trên 1 file riêng biệt trùng tên với class.
+  - Các DTO của một phân hệ/thực thể được đặt trong thư mục con tương ứng với tên thư mục trùng khớp chính xác tên của Entity (ví dụ: `Src/Application/Dto/Admins/Form/FormCreateAdminDto.cs`, `Src/Application/Dto/Admins/Feedback/FeedbackCreateAdminDto.cs` với tên thư mục ở dạng số ít theo tên Entity như `Form`, `Feedback`, `RatingCriteria`...). Mỗi class DTO nằm trên 1 file riêng biệt trùng tên với class.
   - Namespace trong các file DTO ở thư mục con vẫn duy trì namespace gốc (ví dụ: `namespace DMCL.FSM.Application.Dto.Admins`), tránh tạo thêm namespace lồng nhau.
   - Cảnh báo analyzer `IDE0130` (_Namespace does not match folder structure_) đối với thư mục DTO được gỡ bỏ (suppress) trong `.editorconfig` và `GlobalSuppressions.cs`.
 - **Ràng buộc Validation trên DTO**:
@@ -362,6 +365,7 @@ Bên trong một class Entity, code cần được sắp xếp và phân vùng t
 
 ## 33. Sắp xếp Enum Value theo Giá trị (Enum Values Sorting)
 
+- **Tên Enum luôn ở dạng số nhiều (Plural Enum Naming)**: Tất cả tên lớp Enum (Class/Enum Name) và tệp tin mã nguồn tương ứng thuộc thư mục `Domain/Constants/` **BẮT BUỘC** phải luôn ở dạng số nhiều (kết thúc bằng `s` hoặc `es`, ví dụ: `FormTargetTypes`, `RatingCriteriaValueTypes`, `Genders`, `StatusFilters`...) thay vì dùng từ ở dạng số ít (`FormTargetType`, `RatingCriteriaValueType`).
 - Tất cả các giá trị của Enum (Enum Values) **BẮT BUỘC** phải được sắp xếp tăng dần theo giá trị số (numerical value) của chúng.
 
 ## 34. Thứ tự Fields trong DTO phải theo thứ tự Entity (DTO Field Ordering)
@@ -401,3 +405,8 @@ Bên trong một class Entity, code cần được sắp xếp và phân vùng t
 - **Sử dụng `AsNoTracking()` cho Truy vấn Đọc (Read-Only Queries)**:
   - Tất cả các câu truy vấn tra cứu danh sách, xuất báo cáo, đọc dữ liệu trả về cho API Read-Only mà không thực hiện sửa đổi và gọi `SaveChangesAsync()` **BẮT BUỘC** phải áp dụng `.AsNoTracking()` (hoặc sử dụng thuộc tính `Query` của `BaseService` đã được cấu hình tối ưu).
   - `.AsNoTracking()` giúp bỏ qua bộ nhớ Change Tracker trên RAM, giảm chi phí CPU/bộ nhớ và tăng tốc độ đọc dữ liệu từ 20% - 40%.
+
+## 40. Quy định Cấu hình Cột JSONB trong Entity (JSONB Column Mapping)
+
+- Các thuộc tính lưu trữ dữ liệu dạng JSONB dưới Database PostgreSQL **BẮT BUỘC** phải được khai báo kiểu dữ liệu trong C# là **`JsonElement`** (từ namespace `System.Text.Json`).
+- Đính kèm Data Annotation **`[Column(TypeName = "jsonb")]`** trực tiếp phía trên thuộc tính đó trong Entity.
