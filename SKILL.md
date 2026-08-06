@@ -121,6 +121,9 @@ Bên trong một class Entity, code cần được sắp xếp và phân vùng t
 - **Autofac Property Injection & Không kiểm tra Null dư thừa**: Các dependency Service thuộc container được Autofac tiêm tự động thông qua `PropertiesAutowired()`. **Tuyệt đối không viết các câu lệnh kiểm tra null dư thừa** như `if (Service != null)` trước khi gọi phương thức của Service đó.
 - **Tái sử dụng logic giữa phương thức Generic và Non-generic overload**:
   - Khi Service định nghĩa cặp phương thức overload cùng thực hiện một tác vụ tra cứu (ví dụ: `GetListNextState(...)` trả về `List<Entity>` và `GetListNextState<TResult>(...)` trả về `List<TResult>`), phương thức non-generic **bắt buộc phải gọi lại phương thức generic** với type parameter là chính thực thể Entity đó (`return await GetListNextState<WorkflowState>(...);`) để tập trung duy nhất một logic truy vấn, tránh lặp mã nguồn (DRY) và dễ bảo trì.
+- **Loại bỏ các phương thức CRUD boilerplate không có logic tùy biến**:
+  - Đối với các phương thức CRUD chuẩn (`Create`, `Create<TResult>`, `Update`, `Update<TResult>`, `GetList<TResult>`, `GetPage<TResult>`), nếu **không có logic nghiệp vụ tùy biến** (custom business logic) trước/sau khi thực thi, **TUYỆT ĐỐI KHÔNG VIẾT LẠI** trong `partial class` thứ hai của Service. Lớp cơ sở `StrongService<T>` / `BaseService<T>` đã tự động xử lý.
+  - Chỉ ghi đè (override/implement) phương thức khi cần bổ sung kiểm tra điều kiện, ghi log hoặc xử lý dữ liệu đặc thù.
 
 ## 13. Sắp xếp Alphabet và Thứ tự Inject (Alphabetical Sorting & Injection Order)
 
@@ -274,6 +277,9 @@ Bên trong một class Entity, code cần được sắp xếp và phân vùng t
         return result;
     }
     ```
+  - **Ranh giới trách nhiệm giữa `ToEntity` và Service Layer**:
+    - `ToEntity` trong Input DTO chỉ làm nhiệm vụ mapping/chuyển đổi dữ liệu (ví dụ: chuyển danh sách mã `CriteriaCodes` thành các entity liên kết `FormCriteria` mới).
+    - **DTO hạn chế tối đa việc thực hiện các tác vụ can thiệp trực tiếp vào DB** (như xóa các liên kết cũ `RemoveRange`, truy vấn xóa record). Các tác vụ làm sạch/xóa dữ liệu liên kết cũ phải được xử lý ở Service Layer trước khi gọi `UpdateWithMapper`.
 
 - **Quy định Đặt tên trong `[SwaggerTag]` và `[DisplayName]`**:
   - Sử dụng tiếng Việt ngắn gọn làm mô tả cho Controller / DTO.
