@@ -9,8 +9,8 @@ Quy tắc thiết kế và cấu trúc mã nguồn đối với các thực th�
 
 ## 1. Quy tắc Tuyệt đối (Highest Priority Rule)
 
-- **TUYỆT ĐỐI KHÔNG** tự động thực hiện hay tự chạy lệnh `dotnet ef database update` dưới bất kỳ hình thức nào.
-- Mọi thao tác cập nhật Database/Migration phải do người dùng tự thực hiện hoặc trực tiếp yêu cầu.
+- **TUYỆT ĐỐI KHÔNG** tự động thực hiện hay tự chạy các lệnh `dotnet ef migrations add` và `dotnet ef database update` dưới bất kỳ hình thức nào.
+- Mọi thao tác tạo Migration cũng như cập nhật Database phải do người dùng tự thực hiện hoặc trực tiếp yêu cầu.
 
 ## 2. Định nghĩa Giới tính (Genders Enum)
 
